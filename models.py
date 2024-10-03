@@ -4,16 +4,18 @@ from typing import List, Optional, Union
 class Choice(BaseModel):
     id: int
     text: Optional[str] = None
-    # choice: Optional[str] = None  # Used for Free-response questions
+
+class Answer(BaseModel):
+    id: int
+    answer: str  # This should be a string
 
 class CorrectAnswer(BaseModel):
-    answers: Union[List[str], str]  # Adjusted to handle both lists and single string
+    answers: Union[List[Answer], List[str], str]  # Can be a list of Answer objects, a list of strings, or a single string
     answerDetails: Optional[str] = None
 
 class Question(BaseModel):
-    # id: int
     question: str
-    choices: Optional[List[Choice]]
+    choices: Optional[List[Choice]] = None  # Choices can be null or a list
     correctAnswer: CorrectAnswer
     questionDetails: Optional[str] = None
     assignmentType: str
