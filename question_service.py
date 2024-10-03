@@ -1,7 +1,7 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
 
-def product_serializer(product) -> dict:
+def question_serializer(product) -> dict:
     return {
         "_id": str(product["_id"]),
         "name": product["name"],
@@ -10,7 +10,7 @@ def product_serializer(product) -> dict:
         "stock": product["stock"]
     }
 
-class ProductService:
+class QuestionService:
     def __init__(self, db_client: str):
         self.client = AsyncIOMotorClient(db_client)
         self.db = self.client["teacher-questionbank"]
@@ -25,7 +25,7 @@ class ProductService:
     async def get_product(self, product_id: str):
         product = await self.collection.find_one({"_id": ObjectId(product_id)})  # Awaiting asynchronous query
         if product:
-            return product_serializer(product)
+            return question_serializer(product)
         return None
 
     # Update a product by ID
@@ -49,4 +49,4 @@ class ProductService:
                 "$match": {"price": price}  # Add price filter if provided
             })
         products = await self.collection.aggregate(pipeline).to_list(100)  # Awaiting async aggregation and limiting to 100
-        return [product_serializer(product) for product in products]
+        return [question_serializer(product) for product in products]
