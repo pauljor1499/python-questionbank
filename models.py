@@ -13,7 +13,7 @@ class CorrectAnswer(BaseModel):
 class Question(BaseModel):
     # id: int
     question: str
-    choices: List[Choice]
+    choices: Optional[List[Choice]]
     correctAnswer: CorrectAnswer
     questionDetails: Optional[str] = None
     assignmentType: str
