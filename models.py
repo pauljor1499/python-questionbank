@@ -1,14 +1,34 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import List, Optional, Union
+
+class Choice(BaseModel):
+    id: int
+    text: Optional[str] = None
+    choice: Optional[str] = None  # Used for Free-response questions
+
+class CorrectAnswer(BaseModel):
+    answers: Union[List[str], str]  # Adjusted to handle both lists and single string
+    answerDetails: Optional[str] = None
 
 class Question(BaseModel):
-    name: str
-    description: Optional[str] = None
-    price: float
-    stock: int
+    id: int
+    question: str
+    choices: List[Choice]
+    correctAnswer: CorrectAnswer
+    questionDetails: Optional[str] = None
+    assignmentType: str
+    questionType: str
+    difficulty: str
+    teksCode: str
+    points: str
 
 class QuestionUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    price: Optional[float] = None
-    stock: Optional[int] = None
+    question: Optional[str] = None
+    choices: Optional[List[Choice]] = None
+    correctAnswer: Optional[CorrectAnswer] = None
+    questionDetails: Optional[str] = None
+    assignmentType: Optional[str] = None
+    questionType: Optional[str] = None
+    difficulty: Optional[str] = None
+    teksCode: Optional[str] = None
+    points: Optional[str] = None

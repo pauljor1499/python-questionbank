@@ -5,42 +5,44 @@ from typing import Optional
 
 app = FastAPI()
 
+# MongoDB connection URL
 db_url = "mongodb+srv://admin:admin@cluster0.aeltnpt.mongodb.net/"
 question_service = QuestionService(db_url)
 
-# Create a question
-@app.post("/questions/create")
-async def create_question(question: Question):
+@app.post("/questions/create", response_model=dict)
+async def create_question(question: Question) -> dict:
+    """Create a new question."""
     question_data = question.model_dump()
     question_id = await question_service.create_question(question_data)
     return {"id": question_id}
 
-# Get a single question by ID
-@app.get("/questions/{question_id}")
-async def fetch_question(question_id: str):
+@app.get("/questions/{question_id}", response_model=dict)
+async def fetch_question(question_id: str) -> dict:
+    """Fetch a single question by its ID."""
     question = await question_service.fetch_question(question_id)
     if question is None:
         raise HTTPException(status_code=404, detail="Question not found")
     return question
 
-# Update a question by ID
-@app.put("/questions/{question_id}")
-async def update_question(question_id: str, question_update: QuestionUpdate):
+@app.put("/questions/{question_id}", response_model=dict)
+async def update_question(question_id: str, question_update: QuestionUpdate) -> dict:
+    """Update a question by its ID."""
     updated_data = {k: v for k, v in question_update.model_dump().items() if v is not None}
     if not await question_service.fetch_question(question_id):
         raise HTTPException(status_code=404, detail="Question not found")
+    
     await question_service.update_question(question_id, updated_data)
     return {"msg": "Question updated"}
 
-# Delete a question by ID
-@app.delete("/questions/{question_id}")
-async def delete_question(question_id: str):
+@app.delete("/questions/{question_id}", response_model=dict)
+async def delete_question(question_id: str) -> dict:
+    """Delete a question by its ID."""
     if not await question_service.delete_question(question_id):
         raise HTTPException(status_code=404, detail="Question not found")
     return {"msg": "Question deleted"}
 
-# Fetch all questions
-@app.get("/questions/")
-async def fetch_questions(price: Optional[float] = Query(None)):
-    questions = await question_service.fetch_questions(price)
+@app.get("/questions", response_model=list)
+async def fetch_questions(question_type: Optional[str] = Query(None)) -> list:
+    """Fetch all questions, optionally filtered by question type."""
+    questions = await question_service.fetch_questions(question_type)
     return questions
