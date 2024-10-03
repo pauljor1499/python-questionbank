@@ -13,8 +13,8 @@ def product_serializer(product) -> dict:
 class ProductService:
     def __init__(self, db_client: str):
         self.client = AsyncIOMotorClient(db_client)
-        self.db = self.client["test-product"]
-        self.collection = self.db["products"]
+        self.db = self.client["teacher-questionbank"]
+        self.collection = self.db["questionbank"]
 
     # Create a product
     async def create_product(self, product_data: dict):
@@ -41,8 +41,8 @@ class ProductService:
         result = await self.collection.delete_one({"_id": ObjectId(product_id)})  # Awaiting async deletion
         return result.deleted_count > 0
 
-    # List all products
-    async def list_products(self, price: float = None):
+    # Fetch all question
+    async def fetch_questions(self, price: float = None):
         pipeline = []
         if price is not None:
             pipeline.append({

@@ -39,8 +39,8 @@ async def delete_product(product_id: str):
         raise HTTPException(status_code=404, detail="Product not found")
     return {"msg": "Product deleted"}
 
-# List all products
+# Fetch all questions
 @app.get("/products/")
-async def list_products(price: Optional[float] = Query(None)):
-    products = await product_service.list_products(price)
+async def fetch_questions(price: Optional[float] = Query(None)):
+    products = await product_service.fetch_questions(price)
     return products
