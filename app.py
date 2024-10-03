@@ -6,41 +6,41 @@ from typing import Optional
 app = FastAPI()
 
 db_url = "mongodb+srv://admin:admin@cluster0.aeltnpt.mongodb.net/"
-product_service = QuestionService(db_url)
+question_service = QuestionService(db_url)
 
 # Create a question
 @app.post("/questions/create")
-async def create_question(product: Question):
-    product_data = product.model_dump()
-    product_id = await product_service.create_question(product_data)
-    return {"id": product_id}
+async def create_question(question: Question):
+    question_data = question.model_dump()
+    question_id = await question_service.create_question(question_data)
+    return {"id": question_id}
 
 # Get a single question by ID
-@app.get("/questions/{product_id}")
-async def fetch_question(product_id: str):
-    product = await product_service.fetch_question(product_id)
-    if product is None:
+@app.get("/questions/{question_id}")
+async def fetch_question(question_id: str):
+    question = await question_service.fetch_question(question_id)
+    if question is None:
         raise HTTPException(status_code=404, detail="Question not found")
-    return product
+    return question
 
 # Update a question by ID
-@app.put("/questions/{product_id}")
-async def update_question(product_id: str, product_update: QuestionUpdate):
-    updated_data = {k: v for k, v in product_update.model_dump().items() if v is not None}
-    if not await product_service.fetch_question(product_id):
-        raise HTTPException(status_code=404, detail="Product not found")
-    await product_service.update_question(product_id, updated_data)
-    return {"msg": "Product updated"}
+@app.put("/questions/{question_id}")
+async def update_question(question_id: str, question_update: QuestionUpdate):
+    updated_data = {k: v for k, v in question_update.model_dump().items() if v is not None}
+    if not await question_service.fetch_question(question_id):
+        raise HTTPException(status_code=404, detail="Question not found")
+    await question_service.update_question(question_id, updated_data)
+    return {"msg": "Question updated"}
 
-# Delete a product by ID
-@app.delete("/questions/{product_id}")
-async def delete_question(product_id: str):
-    if not await product_service.delete_question(product_id):
-        raise HTTPException(status_code=404, detail="Product not found")
-    return {"msg": "Product deleted"}
+# Delete a question by ID
+@app.delete("/questions/{question_id}")
+async def delete_question(question_id: str):
+    if not await question_service.delete_question(question_id):
+        raise HTTPException(status_code=404, detail="Question not found")
+    return {"msg": "Question deleted"}
 
 # Fetch all questions
 @app.get("/questions/")
 async def fetch_questions(price: Optional[float] = Query(None)):
-    products = await product_service.fetch_questions(price)
-    return products
+    questions = await question_service.fetch_questions(price)
+    return questions
