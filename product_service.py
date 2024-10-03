@@ -1,6 +1,5 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
-from pymongo import MongoClient
 
 def product_serializer(product) -> dict:
     return {
@@ -13,41 +12,41 @@ def product_serializer(product) -> dict:
 
 class ProductService:
     def __init__(self, db_client: str):
-        self.client = MongoClient(db_client)
+        self.client = AsyncIOMotorClient(db_client)
         self.db = self.client["test-product"]
         self.collection = self.db["products"]
 
     # Create a product
     async def create_product(self, product_data: dict):
-        result = self.collection.insert_one(product_data)
+        result = await self.collection.insert_one(product_data)  # Awaiting asynchronous insertion
         return str(result.inserted_id)
 
     # Get a single product by ID
     async def get_product(self, product_id: str):
-        product = self.collection.find_one({"_id": ObjectId(product_id)})
+        product = await self.collection.find_one({"_id": ObjectId(product_id)})  # Awaiting asynchronous query
         if product:
             return product_serializer(product)
         return None
 
     # Update a product by ID
     async def update_product(self, product_id: str, product_data: dict):
-        result = self.collection.update_one({"_id": ObjectId(product_id)}, {"$set": product_data})
+        result = await self.collection.update_one({"_id": ObjectId(product_id)}, {"$set": product_data})  # Awaiting async update
         if result.modified_count:
-            product = self.get_product(product_id)  # Return the updated product
+            product = await self.get_product(product_id)  # Awaiting the asynchronous retrieval of the updated product
             return product
         return None
 
     # Delete a product by ID
     async def delete_product(self, product_id: str):
-        result = self.collection.delete_one({"_id": ObjectId(product_id)})
+        result = await self.collection.delete_one({"_id": ObjectId(product_id)})  # Awaiting async deletion
         return result.deleted_count > 0
 
     # List all products
-    async def list_products(self, price: float):
+    async def list_products(self, price: float = None):
         pipeline = []
         if price is not None:
             pipeline.append({
-                "$match": {"price": price}
+                "$match": {"price": price}  # Add price filter if provided
             })
-        products = self.collection.aggregate(pipeline).to_list(100)
+        products = await self.collection.aggregate(pipeline).to_list(100)  # Awaiting async aggregation and limiting to 100
         return [product_serializer(product) for product in products]
