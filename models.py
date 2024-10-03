@@ -18,8 +18,8 @@ class Question(BaseModel):
     questionDetails: Optional[str] = None
     assignmentType: str
     questionType: str
-    difficulty: str
-    teksCode: str
+    difficulty: Optional[str] = None
+    teksCode: Optional[str] = None
     points: str
 
 class QuestionUpdate(BaseModel):
