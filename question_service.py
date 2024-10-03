@@ -17,28 +17,28 @@ class QuestionService:
         self.collection = self.db["questionbank"]
 
     # Create a product
-    async def create_product(self, product_data: dict):
-        result = await self.collection.insert_one(product_data)  # Awaiting asynchronous insertion
+    async def create_question(self, product_data: dict):
+        result = await self.collection.insert_one(product_data)
         return str(result.inserted_id)
 
-    # Get a single product by ID
-    async def get_product(self, product_id: str):
-        product = await self.collection.find_one({"_id": ObjectId(product_id)})  # Awaiting asynchronous query
+    # Get a single question by ID
+    async def fetch_question(self, product_id: str):
+        product = await self.collection.find_one({"_id": ObjectId(product_id)})
         if product:
             return question_serializer(product)
         return None
 
-    # Update a product by ID
-    async def update_product(self, product_id: str, product_data: dict):
-        result = await self.collection.update_one({"_id": ObjectId(product_id)}, {"$set": product_data})  # Awaiting async update
+    # Update a question by ID
+    async def update_question(self, product_id: str, product_data: dict):
+        result = await self.collection.update_one({"_id": ObjectId(product_id)}, {"$set": product_data})
         if result.modified_count:
-            product = await self.get_product(product_id)  # Awaiting the asynchronous retrieval of the updated product
+            product = await self.fetch_question(product_id)
             return product
         return None
 
-    # Delete a product by ID
-    async def delete_product(self, product_id: str):
-        result = await self.collection.delete_one({"_id": ObjectId(product_id)})  # Awaiting async deletion
+    # Delete a question by ID
+    async def delete_question(self, product_id: str):
+        result = await self.collection.delete_one({"_id": ObjectId(product_id)})
         return result.deleted_count > 0
 
     # Fetch all question
