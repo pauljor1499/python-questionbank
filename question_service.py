@@ -17,6 +17,7 @@ def question_serializer(question: dict) -> dict:
         "category": question["category"]
     }
 
+
 class QuestionService:
     def __init__(self, db_client: str):
         self.client = AsyncIOMotorClient(db_client)
@@ -27,15 +28,18 @@ class QuestionService:
         else:
             print("Connected to MongoDB.")
 
+
     async def create_question(self, question_data: dict) -> str:
         """Create a new question and return its ID."""
         result = await self.collection.insert_one(question_data)
         return str(result.inserted_id)
 
+
     async def fetch_question(self, question_id: str) -> Optional[dict]:
         """Fetch a single question by its ID."""
         question = await self.collection.find_one({"_id": ObjectId(question_id)})
         return question_serializer(question) if question else None
+
 
     async def update_question(self, question_id: str, question_data: dict) -> Optional[dict]:
         """Update an existing question by its ID and return the updated question."""
@@ -45,25 +49,22 @@ class QuestionService:
         )
         return await self.fetch_question(question_id) if result.modified_count else None
 
+
     async def delete_question(self, question_id: str) -> bool:
         """Delete a question by its ID and return a boolean indicating success."""
         result = await self.collection.delete_one({"_id": ObjectId(question_id)})
         return result.deleted_count > 0
 
+
     async def fetch_questions(self, question_type: Optional[str] = None) -> List[dict]:
         """Fetch all questions, optionally filtered by questionType."""
         pipeline = []
-
-        # Add match stage if question_type is provided
         if question_type is not None:
             pipeline.append({"$match": {"questionType": question_type}})
-
         try:
-            # Perform aggregation and limit to 100 results
             questions = await self.collection.aggregate(pipeline).to_list(100)
             return [question_serializer(question) for question in questions]
         except Exception as e:
-            # Handle exceptions (optional logging)
             print(f"Error fetching questions: {e}")
             return []
 

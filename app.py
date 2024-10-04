@@ -19,9 +19,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # MongoDB connection URL
 db_url = "mongodb+srv://admin:admin@cluster0.aeltnpt.mongodb.net/"
 question_service = QuestionService(db_url)
+
 
 @app.post("/questions/create", response_model=dict)
 async def create_question(question: Question) -> dict:
@@ -29,6 +31,7 @@ async def create_question(question: Question) -> dict:
     question_data = question.model_dump()
     question_id = await question_service.create_question(question_data)
     return {"id": question_id}
+
 
 @app.get("/questions/{question_id}", response_model=dict)
 async def fetch_question(question_id: str) -> dict:
@@ -38,15 +41,16 @@ async def fetch_question(question_id: str) -> dict:
         raise HTTPException(status_code=404, detail="Question not found")
     return question
 
+
 @app.put("/questions/{question_id}", response_model=dict)
 async def update_question(question_id: str, question_update: QuestionUpdate) -> dict:
     """Update a question by its ID."""
     updated_data = {k: v for k, v in question_update.model_dump().items() if v is not None}
     if not await question_service.fetch_question(question_id):
         raise HTTPException(status_code=404, detail="Question not found")
-    
     await question_service.update_question(question_id, updated_data)
     return {"msg": "Question updated"}
+
 
 @app.delete("/questions/{question_id}", response_model=dict)
 async def delete_question(question_id: str) -> dict:
@@ -54,6 +58,7 @@ async def delete_question(question_id: str) -> dict:
     if not await question_service.delete_question(question_id):
         raise HTTPException(status_code=404, detail="Question not found")
     return {"msg": "Question deleted"}
+
 
 @app.get("/questions", response_model=list)
 async def fetch_questions(question_type: Optional[str] = Query(None)) -> list:
