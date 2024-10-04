@@ -13,7 +13,8 @@ def question_serializer(question: dict) -> dict:
         "questionType": question["questionType"],
         "difficulty": question.get("difficulty"),
         "teksCode": question["teksCode"],
-        "points": question["points"]
+        "points": question["points"],
+        "category": question["category"]
     }
 
 class QuestionService:

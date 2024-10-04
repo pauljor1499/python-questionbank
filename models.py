@@ -27,6 +27,7 @@ class Question(BaseModel):
     difficulty: Optional[str] = None
     teksCode: Optional[str] = None
     points: str
+    category: str
 
 class QuestionUpdate(BaseModel):
     question: Optional[str] = None
@@ -38,3 +39,4 @@ class QuestionUpdate(BaseModel):
     difficulty: Optional[str] = None
     teksCode: Optional[str] = None
     points: Optional[str] = None
+    category: Optional[str] = None
