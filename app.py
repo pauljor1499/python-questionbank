@@ -2,8 +2,22 @@ from fastapi import FastAPI, HTTPException, Query
 from models import Question, QuestionUpdate
 from question_service import QuestionService
 from typing import Optional
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+# Frontend URLs
+origins = [
+    "http://localhost:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # MongoDB connection URL
 db_url = "mongodb+srv://admin:admin@cluster0.aeltnpt.mongodb.net/"
