@@ -57,8 +57,12 @@ class QuestionService:
         return {"deleted": result.deleted_count > 0, "data": question}
 
 
-    async def fetch_questions(self, question_type: Optional[str] = None, assignment_type: Optional[str] = None, category: Optional[str] = None, difficulty: Optional[str] = None) -> List[dict]:
-        """Fetch all questions, optionally filtered, and count by assignmentType, questionType, category, and difficulty."""
+    async def fetch_questions(self, question_type: Optional[str] = None, assignment_type: Optional[str] = None, category: Optional[str] = None, difficulty: Optional[str] = None,page: Optional[int] = 1, page_size: Optional[int] = 10) -> List[dict]:
+        """Fetch all questions, optionally filtered, and count by assignmentType, questionType, category, and difficulty with pagination."""
+        
+        # Calculate skip and limit for pagination
+        skip = (page - 1) * page_size
+        limit = page_size
         
         # Create a match criteria based on provided filters
         match_criteria = {}
@@ -141,6 +145,10 @@ class QuestionService:
         if match_criteria:
             questions_pipeline.append({"$match": match_criteria})
 
+        # Add skip and limit for pagination
+        questions_pipeline.append({"$skip": skip})
+        questions_pipeline.append({"$limit": limit})
+
         # Fetch questions based on the same criteria
         try:
             questions = await self.collection.aggregate(questions_pipeline).to_list(100)
@@ -149,13 +157,18 @@ class QuestionService:
             print(f"Error fetching questions: {e}")
             question_list = []
 
-        # Return the structured data
+        # Return the structured data with pagination information
         return {
             "data": {
                 "questions": question_list,
                 "assignmentTypes": assignment_types_counts,
                 "questionTypes": question_types_counts,
                 "categories": categories_counts,
-                "difficulties": difficulties_counts
+                "difficulties": difficulties_counts,
+            },
+            "pagination": {
+                "page": page,
+                "pageSize": page_size,
+                "totalCount": len(question_list)  # Total count of fetched questions on the current page
             }
         }

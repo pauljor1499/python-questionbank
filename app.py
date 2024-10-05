@@ -60,7 +60,23 @@ async def delete_question(question_id: str) -> dict:
 
 
 @app.get("/questions", response_model=dict)
-async def fetch_questions(question_type: Optional[str] = Query(None), assignment_type: Optional[str] = Query(None), category: Optional[str] = Query(None), difficulty: Optional[str] = Query(None)) -> list:
-    """Fetch all questions, optionally filtered by question type."""
-    questions = await question_service.fetch_questions(question_type, assignment_type, category, difficulty)
-    return questions
+async def fetch_questions(question_type: Optional[str] = Query(None), 
+    assignment_type: Optional[str] = Query(None), 
+    category: Optional[str] = Query(None), 
+    difficulty: Optional[str] = Query(None), 
+    page: int = Query(1, gt=0),  # Defaults to 1, must be greater than 0
+    page_size: int = Query(10, gt=0, le=100)  # Defaults to 10, with a max of 100
+) -> dict:
+    """Fetch all questions, optionally filtered with pagination."""
+    try:
+        questions = await question_service.fetch_questions(
+            question_type=question_type, 
+            assignment_type=assignment_type, 
+            category=category, 
+            difficulty=difficulty, 
+            page=page, 
+            page_size=page_size
+        )
+        return questions
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching questions: {e}")
