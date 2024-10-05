@@ -48,8 +48,8 @@ async def update_question(question_id: str, question_update: QuestionUpdate) -> 
     updated_data = {k: v for k, v in question_update.model_dump().items() if v is not None}
     if not await question_service.fetch_question(question_id):
         raise HTTPException(status_code=404, detail="Question not found")
-    await question_service.update_question(question_id, updated_data)
-    return {"msg": "Question updated"}
+    updated_question = await question_service.update_question(question_id, updated_data)
+    return {"data": updated_question}
 
 
 @app.delete("/questions/{question_id}", response_model=dict)
@@ -57,7 +57,7 @@ async def delete_question(question_id: str) -> dict:
     """Delete a question by its ID."""
     if not await question_service.delete_question(question_id):
         raise HTTPException(status_code=404, detail="Question not found")
-    return {"msg": "Question deleted"}
+    return {"data": "Question deleted"}
 
 
 @app.get("/questions", response_model=list)

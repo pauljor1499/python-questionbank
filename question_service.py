@@ -32,7 +32,7 @@ class QuestionService:
     async def create_question(self, question_data: dict) -> str:
         """Create a new question and return its ID."""
         result = await self.collection.insert_one(question_data)
-        return str(result.inserted_id)
+        return await self.fetch_question(result.inserted_id)
 
 
     async def fetch_question(self, question_id: str) -> Optional[dict]:
