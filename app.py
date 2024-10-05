@@ -30,7 +30,7 @@ async def create_question(question: Question) -> dict:
     """Create a new question."""
     question_data = question.model_dump()
     question_id = await question_service.create_question(question_data)
-    return {"id": question_id}
+    return {"new_question": question_id}
 
 
 @app.get("/questions/{question_id}", response_model=dict)
@@ -42,7 +42,7 @@ async def fetch_question(question_id: str) -> dict:
     return question
 
 
-@app.put("/questions/{question_id}", response_model=dict)
+@app.put("/questions/update/{question_id}", response_model=dict)
 async def update_question(question_id: str, question_update: QuestionUpdate) -> dict:
     """Update a question by its ID."""
     updated_data = {k: v for k, v in question_update.model_dump().items() if v is not None}
