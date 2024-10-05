@@ -52,8 +52,9 @@ class QuestionService:
 
     async def delete_question(self, question_id: str) -> bool:
         """Delete a question by its ID and return a boolean indicating success."""
+        question = await self.fetch_question(question_id)
         result = await self.collection.delete_one({"_id": ObjectId(question_id)})
-        return result.deleted_count > 0
+        return {"deleted": result.deleted_count > 0, "data": question}
 
 
     async def fetch_questions(self, question_type: Optional[str] = None) -> List[dict]:

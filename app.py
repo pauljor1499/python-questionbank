@@ -52,12 +52,13 @@ async def update_question(question_id: str, question_update: QuestionUpdate) -> 
     return {"data": updated_question}
 
 
-@app.delete("/questions/{question_id}", response_model=dict)
+@app.delete("/questions/delete/{question_id}", response_model=dict)
 async def delete_question(question_id: str) -> dict:
     """Delete a question by its ID."""
-    if not await question_service.delete_question(question_id):
+    question = await question_service.delete_question(question_id)
+    if not question["deleted"]:
         raise HTTPException(status_code=404, detail="Question not found")
-    return {"data": "Question deleted"}
+    return {"data": question}
 
 
 @app.get("/questions", response_model=list)
