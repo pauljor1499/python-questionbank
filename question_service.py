@@ -58,7 +58,9 @@ class QuestionService:
 
 
     async def fetch_questions(self, question_type: Optional[str] = None, assignment_type: Optional[str] = None, category: Optional[str] = None, difficulty: Optional[str] = None) -> List[dict]:
-        """Fetch all questions, optionally filtered."""
+        """Fetch all questions, optionally filtered, and count by assignmentType, questionType, category, and difficulty."""
+        
+        # Create a match criteria based on provided filters
         match_criteria = {}
         if question_type is not None:
             match_criteria["questionType"] = question_type
@@ -69,13 +71,91 @@ class QuestionService:
         if difficulty is not None:
             match_criteria["difficulty"] = difficulty
         
+        # Create the aggregation pipeline for counting
         pipeline = []
         if match_criteria:
             pipeline.append({"$match": match_criteria})
 
+        # Add a group stage to count questions by assignment type, question type, category, and difficulty
+        pipeline.append({
+            "$group": {
+                "_id": {
+                    "assignmentType": "$assignmentType",
+                    "questionType": "$questionType",
+                    "category": "$category",
+                    "difficulty": "$difficulty"
+                },
+                "count": {"$sum": 1}
+            }
+        })
+
         try:
-            questions = await self.collection.aggregate(pipeline).to_list(100)
-            return [question_serializer(question) for question in questions]
+            # Fetch assignment type, question type, category, and difficulty counts
+            counts = await self.collection.aggregate(pipeline).to_list(100)
+
+            # Prepare containers for different counts
+            assignment_types_counts = {
+                "STAAR": 0,
+                "TSI": 0,
+                "SAT": 0,
+                "ACT": 0,
+            }
+            question_types_counts = {}
+            categories_counts = {}
+            difficulties_counts = {}
+
+            # Process the results to get counts for each field
+            for item in counts:
+                # Unpack the fields from the group result
+                assignment_type = item["_id"]["assignmentType"]
+                question_type = item["_id"]["questionType"]
+                category = item["_id"]["category"]
+                difficulty = item["_id"]["difficulty"]
+                count = item["count"]
+
+                # Update assignment type counts
+                if assignment_type in assignment_types_counts:
+                    assignment_types_counts[assignment_type] += count
+
+                # Update question type counts
+                if question_type:
+                    question_types_counts[question_type] = question_types_counts.get(question_type, 0) + count
+
+                # Update category counts
+                if category:
+                    categories_counts[category] = categories_counts.get(category, 0) + count
+
+                # Update difficulty counts
+                if difficulty:
+                    difficulties_counts[difficulty] = difficulties_counts.get(difficulty, 0) + count
+
+        except Exception as e:
+            print(f"Error counting assignment types, question types, categories, or difficulties: {e}")
+            assignment_types_counts = {key: 0 for key in assignment_types_counts}
+            question_types_counts = {}
+            categories_counts = {}
+            difficulties_counts = {}
+
+        # Create a match criteria for fetching the questions
+        questions_pipeline = []
+        if match_criteria:
+            questions_pipeline.append({"$match": match_criteria})
+
+        # Fetch questions based on the same criteria
+        try:
+            questions = await self.collection.aggregate(questions_pipeline).to_list(100)
+            question_list = [question_serializer(question) for question in questions]
         except Exception as e:
             print(f"Error fetching questions: {e}")
-            return []
+            question_list = []
+
+        # Return the structured data
+        return {
+            "data": {
+                "questions": question_list,
+                "assignmentTypes": assignment_types_counts,
+                "questionTypes": question_types_counts,
+                "categories": categories_counts,
+                "difficulties": difficulties_counts
+            }
+        }

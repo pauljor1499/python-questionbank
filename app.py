@@ -63,4 +63,4 @@ async def delete_question(question_id: str) -> dict:
 async def fetch_questions(question_type: Optional[str] = Query(None), assignment_type: Optional[str] = Query(None), category: Optional[str] = Query(None), difficulty: Optional[str] = Query(None)) -> list:
     """Fetch all questions, optionally filtered by question type."""
     questions = await question_service.fetch_questions(question_type, assignment_type, category, difficulty)
-    return {"data": questions}
+    return questions
