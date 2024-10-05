@@ -6,7 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-# Frontend URLs
 origins = [
     "http://localhost:3000",
 ]
@@ -20,7 +19,6 @@ app.add_middleware(
 )
 
 
-# MongoDB connection URL
 db_url = "mongodb+srv://admin:admin@cluster0.aeltnpt.mongodb.net/"
 question_service = QuestionService(db_url)
 
