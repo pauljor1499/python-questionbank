@@ -57,11 +57,17 @@ class QuestionService:
         return {"deleted": result.deleted_count > 0, "data": question}
 
 
-    async def fetch_questions(self, question_type: Optional[str] = None) -> List[dict]:
+    async def fetch_questions(self, question_type: Optional[str] = None, assignment_type: Optional[str] = None, category: Optional[str] = None, difficulty: Optional[str] = None) -> List[dict]:
         """Fetch all questions, optionally filtered by questionType."""
         pipeline = []
         if question_type is not None:
             pipeline.append({"$match": {"questionType": question_type}})
+        if assignment_type is not None:
+            pipeline.append({"$match": {"assignmentType": assignment_type}})
+        if category is not None:
+            pipeline.append({"$match": {"category": category}})
+        if difficulty is not None:
+            pipeline.append({"$match": {"difficulty": difficulty}})
         try:
             questions = await self.collection.aggregate(pipeline).to_list(100)
             return [question_serializer(question) for question in questions]
