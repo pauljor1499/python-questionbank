@@ -58,21 +58,24 @@ class QuestionService:
 
 
     async def fetch_questions(self, question_type: Optional[str] = None, assignment_type: Optional[str] = None, category: Optional[str] = None, difficulty: Optional[str] = None) -> List[dict]:
-        """Fetch all questions, optionally filtered by questionType."""
-        pipeline = []
+        """Fetch all questions, optionally filtered."""
+        match_criteria = {}
         if question_type is not None:
-            pipeline.append({"$match": {"questionType": question_type}})
+            match_criteria["questionType"] = question_type
         if assignment_type is not None:
-            pipeline.append({"$match": {"assignmentType": assignment_type}})
+            match_criteria["assignmentType"] = assignment_type
         if category is not None:
-            pipeline.append({"$match": {"category": category}})
+            match_criteria["category"] = category
         if difficulty is not None:
-            pipeline.append({"$match": {"difficulty": difficulty}})
+            match_criteria["difficulty"] = difficulty
+        
+        pipeline = []
+        if match_criteria:
+            pipeline.append({"$match": match_criteria})
+
         try:
             questions = await self.collection.aggregate(pipeline).to_list(100)
             return [question_serializer(question) for question in questions]
         except Exception as e:
             print(f"Error fetching questions: {e}")
             return []
-
-
