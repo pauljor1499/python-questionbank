@@ -57,8 +57,8 @@ class QuestionService:
         return {"deleted": result.deleted_count > 0, "data": question}
 
 
-    async def fetch_questions(self, question_type: Optional[str] = None, assignment_type: Optional[str] = None, category: Optional[str] = None, difficulty: Optional[str] = None, page: Optional[int] = 1, page_size: Optional[int] = 10) -> List[dict]:
-        """Fetch questions per page and count assignmentType, questionType, category, and difficulty per page."""
+    async def fetch_questions(self, question_type: Optional[str] = None, assignment_type: Optional[str] = None, category: Optional[str] = None, difficulty: Optional[str] = None,page: Optional[int] = 1, page_size: Optional[int] = 10) -> List[dict]:
+        """Fetch all questions, optionally filtered, and count by assignmentType, questionType, category, and difficulty with pagination."""
         
         # Calculate skip and limit for pagination
         skip = (page - 1) * page_size
@@ -75,7 +75,75 @@ class QuestionService:
         if difficulty is not None:
             match_criteria["difficulty"] = difficulty
 
-        # Create a match criteria for fetching the paginated questions
+        # Fetch total number of questions matching the criteria (overall number of questions)
+        total_questions = await self.collection.count_documents(match_criteria)
+        
+        # Create the aggregation pipeline for counting
+        pipeline = []
+        if match_criteria:
+            pipeline.append({"$match": match_criteria})
+
+        # Add a group stage to count questions by assignment type, question type, category, and difficulty
+        pipeline.append({
+            "$group": {
+                "_id": {
+                    "assignmentType": "$assignmentType",
+                    "questionType": "$questionType",
+                    "category": "$category",
+                    "difficulty": "$difficulty"
+                },
+                "count": {"$sum": 1}
+            }
+        })
+
+        try:
+            # Fetch assignment type, question type, category, and difficulty counts
+            counts = await self.collection.aggregate(pipeline).to_list(100)
+
+            # Prepare containers for different counts
+            assignment_types_counts = {
+                "STAAR": 0,
+                "TSI": 0,
+                "SAT": 0,
+                "ACT": 0,
+            }
+            question_types_counts = {}
+            categories_counts = {}
+            difficulties_counts = {}
+
+            # Process the results to get counts for each field
+            for item in counts:
+                # Unpack the fields from the group result
+                assignment_type = item["_id"]["assignmentType"]
+                question_type = item["_id"]["questionType"]
+                category = item["_id"]["category"]
+                difficulty = item["_id"]["difficulty"]
+                count = item["count"]
+
+                # Update assignment type counts
+                if assignment_type in assignment_types_counts:
+                    assignment_types_counts[assignment_type] += count
+
+                # Update question type counts
+                if question_type:
+                    question_types_counts[question_type] = question_types_counts.get(question_type, 0) + count
+
+                # Update category counts
+                if category:
+                    categories_counts[category] = categories_counts.get(category, 0) + count
+
+                # Update difficulty counts
+                if difficulty:
+                    difficulties_counts[difficulty] = difficulties_counts.get(difficulty, 0) + count
+
+        except Exception as e:
+            print(f"Error counting assignment types, question types, categories, or difficulties: {e}")
+            assignment_types_counts = {key: 0 for key in assignment_types_counts}
+            question_types_counts = {}
+            categories_counts = {}
+            difficulties_counts = {}
+
+        # Create a match criteria for fetching the questions
         questions_pipeline = []
         if match_criteria:
             questions_pipeline.append({"$match": match_criteria})
@@ -84,62 +152,13 @@ class QuestionService:
         questions_pipeline.append({"$skip": skip})
         questions_pipeline.append({"$limit": limit})
 
+        # Fetch questions based on the same criteria
         try:
-            # Fetch paginated questions
             questions = await self.collection.aggregate(questions_pipeline).to_list(100)
             question_list = [question_serializer(question) for question in questions]
-
-            # Now, group and count the fields for the questions on the current page
-            counts_pipeline = [
-                {"$match": {"_id": {"$in": [q["_id"] for q in questions]}}},
-                {
-                    "$group": {
-                        "_id": {
-                            "assignmentType": "$assignmentType",
-                            "questionType": "$questionType",
-                            "category": "$category",
-                            "difficulty": "$difficulty"
-                        },
-                        "count": {"$sum": 1}
-                    }
-                }
-            ]
-            
-            counts = await self.collection.aggregate(counts_pipeline).to_list(100)
-            
-            # Prepare containers for different counts
-            assignment_types_counts = {"STAAR": 0, "TSI": 0, "SAT": 0, "ACT": 0}
-            question_types_counts = {}
-            categories_counts = {}
-            difficulties_counts = {}
-
-            # Process the counts per page
-            for item in counts:
-                assignment_type = item["_id"]["assignmentType"]
-                question_type = item["_id"]["questionType"]
-                category = item["_id"]["category"]
-                difficulty = item["_id"]["difficulty"]
-                count = item["count"]
-
-                if assignment_type in assignment_types_counts:
-                    assignment_types_counts[assignment_type] += count
-                if question_type:
-                    question_types_counts[question_type] = question_types_counts.get(question_type, 0) + count
-                if category:
-                    categories_counts[category] = categories_counts.get(category, 0) + count
-                if difficulty:
-                    difficulties_counts[difficulty] = difficulties_counts.get(difficulty, 0) + count
-
         except Exception as e:
-            print(f"Error fetching or counting questions: {e}")
+            print(f"Error fetching questions: {e}")
             question_list = []
-            assignment_types_counts = {key: 0 for key in assignment_types_counts}
-            question_types_counts = {}
-            categories_counts = {}
-            difficulties_counts = {}
-
-        # Fetch total number of questions matching the criteria
-        total_questions = await self.collection.count_documents(match_criteria)
 
         # Return the structured data with pagination information
         return {
