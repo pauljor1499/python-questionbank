@@ -8,7 +8,8 @@ import os
 app = FastAPI()
 
 origins = [
-    "http://localhost:3000",
+    "http://localhost:3000", # DEV env
+    "https://mathmattersqa.xyz" # QA env
 ]
 
 app.add_middleware(
