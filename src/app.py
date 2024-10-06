@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Query
-from models import Question, QuestionUpdate
-from question_service import QuestionService
+from src.models import Question, QuestionUpdate
+from src.question_service import QuestionService
 from typing import Optional
 from fastapi.middleware.cors import CORSMiddleware
 
