@@ -3,6 +3,7 @@ from src.models import Question, QuestionUpdate
 from src.question_service import QuestionService
 from typing import Optional
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 app = FastAPI()
 
@@ -19,7 +20,7 @@ app.add_middleware(
 )
 
 
-db_url = "mongodb+srv://admin:admin@cluster0.aeltnpt.mongodb.net/"
+db_url = os.getenv("MONGO_URL", "mongodb+srv://admin:admin@cluster0.aeltnpt.mongodb.net/")
 question_service = QuestionService(db_url)
 
 
