@@ -41,6 +41,7 @@ coverage.html
 Pipfile.lock
 archive.zip
 profile.html
+.env
 
 # Compiled Java class files
 *.class

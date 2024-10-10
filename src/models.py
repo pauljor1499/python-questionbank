@@ -1,42 +1,91 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import List, Optional, Union
+from datetime import datetime, timezone
+from beanie import Document
+from src.validations.value_validations import QuestionType, AssignmentType, Category, DifficultyType
+from src.validations.field_validations import (
+    validate_teks_code_field,
+    validate_category_field,
+    validate_deleted_field,
+    validate_created_date_field,
+    validate_updated_date_field
+)
+
 
 class Item(BaseModel):
-    id: int # custom ID
-    text: str
+    id: int  # Custom ID
+    text: str = Field(..., min_length=1, max_length=300)
 
-class Choice(BaseModel):
-    id: int # custom ID
-    items: List[Item]  # List of items for drop-down-menu type
+class Select(BaseModel):
+    id: int  # Custom ID
+    items: List[Item]
 
 class Answer(BaseModel):
-    id: int  # custom ID
-    answer: str  # Actual answer text
+    id: int  # Custom ID
+    answer: str = Field(..., min_length=1, max_length=300)
 
 class CorrectAnswer(BaseModel):
-    answers: Union[List[Answer], List[str], str] # Can be a list of Answer objects, a list of strings, or a single string
-    answerDetails: Optional[str] = None
+    answers: Union[List[Answer], List[str], str]  # Can be a list of Answer objects, a list of strings, or a single string
+    answerDetails: str = Field(None, min_length=1, max_length=300)
 
-class Question(BaseModel):
-    question: str  # The main question text
-    choices: Optional[List[Union[Item, Choice]]] = None  # Choices can be None/null for free-response/graph
-    correctAnswer: CorrectAnswer  # Correct answers with details
-    questionDetails: Optional[str] = None
-    assignmentType: str  # Type of assignment (STAAR, SAT, ACT, TSI)
-    questionType: str  # Type of question (Multiple-choice, Checkbox, Free-response, Graph, Drop-down-Menu, Drag-and-drop)
-    difficulty: Optional[str] = None
-    teksCode: Optional[str] = None
-    points: str
-    category: str
+class QuestionBase(Document):
+    # Required fields
+    question: str = Field(..., min_length=1, max_length=300)
+    correctAnswer: CorrectAnswer
+    assignmentType: AssignmentType
+    difficulty: DifficultyType
+    points: str = Field(..., min_length=1, max_length=3)
+    questionType: QuestionType
+    createdDate: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    deleted: bool = False
+    # Optional fields
+    updatedDate: Optional[datetime] = None
+    questionDetails: Optional[str] = Field(None, min_length=1, max_length=300)
+    teksCode: Optional[str] = Field(None, min_length=1, max_length=3)
+    category: Optional[Category] = None
+    
+    @model_validator(mode='before')
+    def validate_fields(cls, values):
+        validate_teks_code_field(values)
+        validate_category_field(values)
+        validate_deleted_field(values)
+        validate_created_date_field(values)
+        validate_updated_date_field(values)
+        return values
 
-class QuestionUpdate(BaseModel):
-    question: Optional[str] = None
-    choices: Optional[List[Union[Item, Choice]]] = None
+class QuestionUpdate(Document):
+    question: Optional[str] = Field(None, min_length=1, max_length=300)
+    choices: Optional[List[Union[Item, Select]]] = None
     correctAnswer: Optional[CorrectAnswer] = None
-    questionDetails: Optional[str] = None
-    assignmentType: Optional[str] = None
-    questionType: Optional[str] = None
-    difficulty: Optional[str] = None
-    teksCode: Optional[str] = None
-    points: Optional[str] = None
-    category: Optional[str] = None
+    questionDetails: Optional[str] = Field(None, min_length=1, max_length=300)
+    assignmentType: Optional[AssignmentType] = None
+    difficulty: Optional[DifficultyType] = None
+    teksCode: Optional[str] = Field(None, min_length=1, max_length=3)
+    points: Optional[str] = Field(None, min_length=1, max_length=3)
+    category: Optional[Category] = None
+    questionType: Optional[QuestionType] = None
+    updatedDate: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class MultipleChoiceQuestion(QuestionBase):
+    choices: List[Item]
+    questionType: QuestionType = QuestionType.MULTIPLE_CHOICE
+
+class CheckboxQuestion(QuestionBase):
+    choices: List[Item]
+    questionType: QuestionType = QuestionType.CHECKBOX
+
+class FreeResponseQuestion(QuestionBase):
+    questionType: QuestionType = QuestionType.FREE_RESPONSE
+    # No choices are needed for free-response
+
+class GraphQuestion(QuestionBase):
+    questionType: QuestionType = QuestionType.GRAPH
+    # No choices are needed for graph
+
+class DropdownMenuQuestion(QuestionBase):
+    choices: List[Select]
+    questionType: QuestionType = QuestionType.DROP_DOWN_MENU
+
+class DragAndDropQuestion(QuestionBase):
+    choices: List[Item]
+    questionType: QuestionType = QuestionType.DRAG_AND_DROP
