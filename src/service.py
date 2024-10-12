@@ -1,21 +1,18 @@
 from fastapi import HTTPException
 from bson import ObjectId
 from typing import Optional, Type
-from src.connection import DB_NAME, client
+from src.connection import DATABASE
 from src.models import QuestionUpdate
 from src.utilities import question_serializer, question_type_map
 
 
 class QuestionService:
     def __init__(self):
-        self.client = client
-        self.db = self.client[DB_NAME]
-        self.collection = self.db["questionbank"]
-        if self.client is None:
-            print("\033[31mUnable to connect from the Database.\033[0m")
+        if DATABASE is not None:
+            self.collection = DATABASE["questionbank"]
         else:
-            print("\033[32mSuccessfully connected from the Database.\033[0m")
-
+            print(f"\033[31mERROR: Unable to connect to the database.\033[0m")
+            
 
     async def create_question(self, question_data: dict) -> dict:
         try:
@@ -90,61 +87,64 @@ class QuestionService:
 
 
     async def fetch_questions(self, query: dict) -> dict:
-        question_type = query.get("questionType", None)
-        assignment_type = query.get("assignmentType", None)
-        category = query.get("category", None)
-        difficulty = query.get("difficulty", None)
-        page = query.get("page", 1)
-        page_size = query.get("page_size", 10)
-
-        skip = (page - 1) * page_size
-        limit = page_size
-
-        match_criteria = {"deleted": False}
-        
-        if question_type:
-            match_criteria["questionType"] = question_type
-        if assignment_type:
-            match_criteria["assignmentType"] = assignment_type
-        if category:
-            match_criteria["category"] = category
-        if difficulty:
-            match_criteria["difficulty"] = difficulty
-
-        # Count total questions that match the criteria
-        total_questions = await self.collection.count_documents(match_criteria)
-
-        # Create the aggregation pipeline for counting groupings
-        pipeline = []
-
-        if match_criteria:
-            pipeline.append({"$match": match_criteria})
-
-        # Create the aggregation pipeline for counting groupings
-        pipeline.append({
-            "$group": {
-                "_id": {
-                    "assignmentType": "$assignmentType",
-                    "questionType": "$questionType",
-                    "category": "$category",
-                    "difficulty": "$difficulty"
-                },
-                "count": {"$sum": 1}
-            }
-        })
-
         try:
-            counts = await self.collection.aggregate(pipeline).to_list(100)
+            # Extract query parameters, supporting both snake_case and camelCase
+            question_type = query.get("questionType") or query.get("question_type")
+            assignment_type = query.get("assignmentType") or query.get("assignment_type")
+            category = query.get("category")
+            difficulty = query.get("difficulty")
+            page = int(query.get("page", 1))  # Convert page to int with default of 1
+            page_size = int(query.get("pageSize", query.get("page_size", 10)))  # Convert pageSize/page_size to int with default of 10
+
+            # Pagination parameters
+            skip = (page - 1) * page_size
+            limit = page_size
+
+            # Matching criteria for filtering
+            match_criteria = {"deleted": False}
+            if question_type:
+                match_criteria["questionType"] = question_type
+            if assignment_type:
+                match_criteria["assignmentType"] = assignment_type
+            if category:
+                match_criteria["category"] = category
+            if difficulty:
+                match_criteria["difficulty"] = difficulty
+
+            # Count total questions matching the criteria
+            total_questions = await self.collection.count_documents(match_criteria)
+
+            # Build aggregation pipeline for counting groupings
+            aggregation_pipeline = [{"$match": match_criteria}] if match_criteria else []
+
+            aggregation_pipeline.append({
+                "$group": {
+                    "_id": {
+                        "assignmentType": "$assignmentType",
+                        "questionType": "$questionType",
+                        "category": "$category",
+                        "difficulty": "$difficulty"
+                    },
+                    "count": {"$sum": 1}
+                }
+            })
+
+            # Run the aggregation to get group counts
+            counts = await self.collection.aggregate(aggregation_pipeline).to_list(100)
+
+            # Initialize counts dictionaries
             assignment_types_counts = {"STAAR": 0, "TSI": 0, "SAT": 0, "ACT": 0}
             question_types_counts, categories_counts, difficulties_counts = {}, {}, {}
 
             for item in counts:
+                # Extract group counts from the aggregation results
                 assignment_type = item["_id"]["assignmentType"]
                 question_type = item["_id"]["questionType"]
                 category = item["_id"]["category"]
                 difficulty = item["_id"]["difficulty"]
                 count = item["count"]
 
+                # Update counts
                 if assignment_type in assignment_types_counts:
                     assignment_types_counts[assignment_type] += count
                 if question_type:
@@ -154,27 +154,32 @@ class QuestionService:
                 if difficulty:
                     difficulties_counts[difficulty] = difficulties_counts.get(difficulty, 0) + count
 
-        except Exception as e:
-            print(f"Error counting assignment types, question types, categories, or difficulties: {e}")
-            assignment_types_counts = {key: 0 for key in assignment_types_counts}
-            question_types_counts, categories_counts, difficulties_counts = {}, {}, {}
+            # Fetch questions with pagination
+            questions_pipeline = [{"$match": match_criteria}] if match_criteria else []
+            questions_pipeline.extend([{"$skip": skip}, {"$limit": limit}])
 
-        # Fetch questions with pagination
-        questions_pipeline = []
-
-        if match_criteria:
-            questions_pipeline.append({"$match": match_criteria})
-
-        questions_pipeline.append({"$skip": skip})
-        questions_pipeline.append({"$limit": limit})
-
-        try:
-            questions = await self.collection.aggregate(questions_pipeline).to_list(100)
+            questions = await self.collection.aggregate(questions_pipeline).to_list(limit)
             question_list = [question_serializer(question) for question in questions]
-        except Exception as e:
-            print(f"Error fetching questions: {e}")
-            question_list = []
 
+        except Exception as e:
+            print(f"Error during data fetching: {e}")
+            return {
+                "data": {
+                    "questions": [],
+                    "assignmentTypes": {"STAAR": 0, "TSI": 0, "SAT": 0, "ACT": 0},
+                    "questionTypes": {},
+                    "categories": {},
+                    "difficulties": {},
+                },
+                "pagination": {
+                    "page": page,
+                    "pageSize": page_size,
+                    "totalCount": 0,
+                    "totalQuestions": 0
+                }
+            }
+
+        # Return the final response with questions and pagination
         return {
             "data": {
                 "questions": question_list,
@@ -190,3 +195,4 @@ class QuestionService:
                 "totalQuestions": total_questions
             }
         }
+
