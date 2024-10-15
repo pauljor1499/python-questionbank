@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.routes.question_bank.questions import router as QuestionBank
-from src.connection import init_db, init_school_db
+from src.routes.question_bank.question_bank import router as QuestionBank
+from src.connection import init_db
 from contextlib import asynccontextmanager
 
 
@@ -9,7 +9,6 @@ from contextlib import asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup event
     await init_db()
-    await init_school_db()
     yield
     # Shutdown event (if needed)
     # Perform any cleanup actions here

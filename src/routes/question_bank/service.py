@@ -7,10 +7,10 @@ from src.routes.question_bank.utilities.helpers import question_serializer, ques
 from datetime import datetime, timezone
 
 
-class QuestionService:
+class QuestionBankService:
     def __init__(self):
         if DATABASE is not None:
-            self.collection = DATABASE["questionbank"]
+            self.collection = DATABASE["questions"]
         else:
             print(f"\033[31mERROR: Unable to connect to the database.\033[0m")
             
@@ -18,7 +18,6 @@ class QuestionService:
     async def create_question(self, question_data: QuestionBase) -> dict:
         try:
             questionType = question_data["questionType"]
-            print(question_data)
             if questionType not in question_type_map:
                 raise HTTPException(status_code=400, detail="Invalid question type")
             QuestionModel: Type = question_type_map[questionType]

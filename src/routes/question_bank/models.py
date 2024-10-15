@@ -2,8 +2,8 @@ from pydantic import BaseModel, Field, model_validator
 from typing import List, Optional, Union
 from datetime import datetime, timezone
 # from beanie import Document
-from src.routes.question_bank.utilities.validations.input_validations import QuestionType, AssignmentType, Category, DifficultyType
-from src.routes.question_bank.utilities.validations.field_validations import (
+from src.routes.question_bank.validations.input_validations import QuestionType, AssignmentType, Category, DifficultyType
+from src.routes.question_bank.validations.field_validations import (
     validate_question_field,
     validate_choices_field,
     validate_correct_answer_field,
