@@ -53,6 +53,8 @@ class QuestionBankService:
             raise HTTPException(status_code=400, detail="Invalid question ID format")
         # Filter out None values from updated_question
         question_data = {k: v for k, v in updated_question.model_dump().items() if v is not None}
+        question_data["teksCode"] = question_data.get("teksCode", None)
+        question_data["category"] = question_data.get("category", None)
         existing_question = await self.fetch_question(question_id)
         if existing_question is None:
             raise HTTPException(status_code=404, detail="Question not found")
