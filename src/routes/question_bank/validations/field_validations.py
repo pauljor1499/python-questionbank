@@ -6,12 +6,12 @@ def validate_question_field(values):
     return values
 
 def validate_choices_field(values):
-    if values["questionType"] in ["Free-response", "Graph"]:
-        if values["choices"] is not None:
-            raise ValueError('choices field must be null.')
-    else:
-        if 'choices' not in values:
-            raise ValueError('choices field is missing.')
+    # if values["questionType"] in ["Free-response", "Graph"]:
+    #     if values["choices"] is not None:
+    #         raise ValueError('choices field must be null.')
+    # else:
+    if 'choices' not in values:
+        raise ValueError('choices field is missing.')
     return values
 
 def validate_correct_answer_field(values):
@@ -40,9 +40,9 @@ def validate_difficulty_field(values):
     return values
 
 def validate_teks_code_field(values):
-    if values["assignmentType"] != "STAAR" and values["teksCode"] is not None:
-        raise ValueError('teksCode must be null.')
-    elif 'teksCode' not in values:
+    # if values["assignmentType"] != "STAAR" and values["teksCode"] is not None:
+    #     raise ValueError('teksCode must be null.')
+    if 'teksCode' not in values:
         raise ValueError('teksCode is missing.')
     return values
 
@@ -52,9 +52,9 @@ def validate_points_field(values):
     return values
 
 def validate_category_field(values):
-    if values["assignmentType"] != "STAAR" and values["category"] is not None:
-        raise ValueError('category field must be null.')
-    elif 'category' not in values:
+    # if values["assignmentType"] != "STAAR" and values["category"] is not None:
+    #     raise ValueError('category field must be null.')
+    if 'category' not in values:
         raise ValueError('category field is missing.')
     return values
 

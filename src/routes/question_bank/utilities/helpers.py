@@ -1,8 +1,3 @@
-from src.routes.question_bank.models import (
-    MultipleChoiceQuestion, CheckboxQuestion, FreeResponseQuestion, 
-    GraphQuestion, DropdownMenuQuestion, DragAndDropQuestion, 
-)
-
 
 def question_serializer(question: dict) -> dict:
     return {
@@ -22,12 +17,3 @@ def question_serializer(question: dict) -> dict:
         "updatedDate": question["updatedDate"],
         "deletedDate": question["deletedDate"],
     }
-
-question_type_map = {
-    "Multiple-choice": MultipleChoiceQuestion,
-    "Checkbox": CheckboxQuestion,
-    "Free-response": FreeResponseQuestion,
-    "Graph": GraphQuestion,
-    "Drop-down-Menu": DropdownMenuQuestion,
-    "Drag-and-Drop": DragAndDropQuestion,
-}

@@ -2,8 +2,8 @@ from fastapi import HTTPException
 from bson import ObjectId
 from typing import Optional, Type
 from src.connection import DATABASE
-from src.routes.question_bank.models import QuestionUpdate, QuestionBase
-from src.routes.question_bank.utilities.helpers import question_serializer, question_type_map
+from src.routes.question_bank.models import QuestionModelCreate, QuestionModelUpdate
+from src.routes.question_bank.utilities.helpers import question_serializer
 from datetime import datetime, timezone
 
 
@@ -15,15 +15,10 @@ class QuestionBankService:
             print(f"\033[31mERROR: Unable to connect to the database.\033[0m")
             
 
-    async def create_question(self, question_data: QuestionBase) -> dict:
+    async def create_question(self, question_data: QuestionModelCreate) -> dict:
         try:
-            questionType = question_data["questionType"]
-            if questionType not in question_type_map:
-                raise HTTPException(status_code=400, detail="Invalid question type")
-            QuestionModel: Type = question_type_map[questionType]
-            question = QuestionModel(**question_data)
-            question_dict = question.dict()
-            result = await self.collection.insert_one(question_dict)
+            # question_data.createdDate = datetime.now(timezone.utc)
+            result = await self.collection.insert_one(question_data.model_dump())
             new_question = await self.fetch_question(str(result.inserted_id))
             return {"new_question": new_question}
         except HTTPException as error:
@@ -48,13 +43,12 @@ class QuestionBankService:
             raise HTTPException(status_code=500, detail="Error while fetching the question")
 
 
-    async def update_question(self, question_id: str, updated_question: QuestionUpdate) -> Optional[dict]:
+    async def update_question(self, question_id: str, updated_question: QuestionModelUpdate) -> dict:
         if not ObjectId.is_valid(question_id):
             raise HTTPException(status_code=400, detail="Invalid question ID format")
+        # updated_question.updatedDate = datetime.now(timezone.utc)
         # Filter out None values from updated_question
         question_data = {k: v for k, v in updated_question.model_dump().items() if v is not None}
-        question_data["teksCode"] = question_data.get("teksCode", None)
-        question_data["category"] = question_data.get("category", None)
         existing_question = await self.fetch_question(question_id)
         if existing_question is None:
             raise HTTPException(status_code=404, detail="Question not found")
