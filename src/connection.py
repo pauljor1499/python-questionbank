@@ -3,8 +3,8 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 
 
-MONGO_URL = os.getenv("MONGO_URL", "mongodb+srv://doadmin:m69E8K3nvq5BN047@db-global-question-bank-59b68914.mongo.ondigitalocean.com/admin?tls=true&authSource=admin&replicaSet=db-global-question-bank")
-DB_NAME = os.getenv("DB_NAME", "prod-master")
+MONGO_URL = os.getenv("MONGO_URL")
+DB_NAME = os.getenv("DB_NAME")
 DB_CLIENT = AsyncIOMotorClient(MONGO_URL)
 DATABASE = DB_CLIENT[DB_NAME]
 
