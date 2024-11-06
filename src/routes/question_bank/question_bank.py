@@ -1,7 +1,8 @@
-from fastapi import Request, APIRouter, Body, status
+from fastapi import Request, APIRouter, Body, status, Depends
 from src.routes.question_bank.service import QuestionBankService
 from src.routes.question_bank.models import QuestionModelCreate, QuestionModelUpdate
 from src.routes.question_bank.utilities.payloads import questions
+from src.authentication.jwt_bearer import JWTBearer
 
 
 router = APIRouter()
@@ -9,8 +10,8 @@ router = APIRouter()
 question_bank = QuestionBankService()
 
 @router.get("", response_model=dict, status_code=status.HTTP_200_OK)
-async def fetch_questions(query: Request) -> dict:
-    query_dict = dict(query.query_params)
+async def fetch_questions(request: Request) -> dict:
+    query_dict = dict(request.query_params)
     return await question_bank.fetch_questions(query_dict)
 
 @router.post("/create", response_model=dict, status_code=status.HTTP_200_OK)
